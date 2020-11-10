@@ -1,57 +1,37 @@
-from websockets.exceptions import ConnectionClosedError
+import logging
+from app.controller import Controller
+from app.settings import Settings
+
+logging.basicConfig(level=logging.INFO)
+
+conf = Settings.config()
+
+client = Controller(
+    token=conf[0].token,
+    prefix=conf[0].prefix,
+    host=conf[1].host,
+    port=conf[1].port,
+    title=conf[1].title,
+    description=conf[1].description,
+    fast_api_debug=conf[1].debug,
+    asgi_debug=conf[4],
+    discord_debug=conf[0].debug
+)
+client.startup()
 
 
+@client.fast_api_server.get("/")
+async def read_root():
+    return {
+        "bot_account_name": str(client.zeroday_client.user.name),
+        "bot_account_cid": str(client.zeroday_client.user.id),
+        "copyright": "Copyright (C) 2020 zeroday0619",
+        "LICENSE": "MIT License",
+        "VERSION": "3.0-dev"
+    }
 
-try:
-    from core import *
-    from Utils.load_extension import LoadExtension, ReloadExtension, AsyncLoadExtension
-    from Utils.discord_presense_task import change_status
-
-    token = config["Token"]
-
-    async_ext = ["cogs.utils", "cogs.music"]
-    _ext = ["Utils.discord_presense_task"]
-    reload_ext = ["cogs.utils", "cogs.music", "Utils.discord_presense_task"]
-
-    @bot.event
-    async def on_ready():
-        print(
-            "-------------------------------------------------------------------------------"
-        )
-        print(f"[*] Logged is as [{bot.user.name}]")
-        print(f"[*] CID: {str(bot.user.id)}")
-        print(f"[*] zeroday0619 | Copyright (C) 2020 zeroday0619")
-        print(
-            "-------------------------------------------------------------------------------"
-        )
-        print(f'[*] Completed! running the "zeroday" framework')
-        try:
-            await change_status.start()
-        except RuntimeError:
-            print("RUNTIME ERROR..... Reload Extension!")
-            try:
-                ReloadExtension(_cogs=reload_ext)
-            except Exception as ex:
-                print(f"SYSTEM ERROR: {ex}")
-        except ConnectionClosedError as ex:
-            try:
-                ReloadExtension(_cogs=reload_ext)
-            except Exception as ex:
-                print(f"SYSTEM ERROR: {ex}")
-            print(f"NETWORK ERROR: {ex}")
-        except Exception as ex:
-            try:
-                ReloadExtension(_cogs=reload_ext)
-            except Exception as ex:
-                print(f"SYSTEM ERROR: {ex}")
-            print(f"UNKNOWN ERROR: {ex}")
-
-    bot.loop.run_in_executor(None, bot.remove_command, "help")
-    AsyncLoadExtension(_cogs=async_ext)
-    LoadExtension(_cogs=_ext)
-    bot.loop.run_until_complete(bot.run(token))
-except TypeError:
-    print("\nShutdown SUCCESS!")
-
-except RuntimeError:
-    pass
+if __name__ == '__main__':
+    client.zeroday_client.load_extension("cogs.system.Events")
+    client.zeroday_client.load_extension("cogs.system.Management")
+    client.zeroday_client.load_extension("cogs.music")
+    client.start()

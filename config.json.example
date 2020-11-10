@@ -1,0 +1,26 @@
+{
+  "zeroday_bot_config": {
+    "discord": {
+      "token": "<Discord Token>",
+      "prefix": "$",
+      "debug": false
+    },
+    "fastapi": {
+      "host": "127.0.0.1",
+      "port": 8080,
+      "title": "ZERODAY BOT Console",
+      "description": "Project ZERODAY",
+      "debug": false
+    },
+    "music": {
+      "X_Naver_Client_Id": "",
+      "X_Naver_Client_Secret": ""
+
+    },
+    "mongodb": {
+      "db_url": "mongodb://{}",
+      "db_port": 27017
+    },
+    "asgi_debug": false
+  }
+}
