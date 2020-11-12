@@ -66,7 +66,6 @@ class Controller:
             soc=self,
             token=self.discord_token,
             command_prefix=self.discord_prefix,
-            help_command=None,
             case_insensitive=True,
             shard_count=10,
             shard_ids=(1, 2, 5, 6)

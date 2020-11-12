@@ -1,26 +1,26 @@
-import asyncio
-import discord
 import traceback
 import itertools
-import re
+import asyncio
+import discord
 import sys
+import re
 
 from validator_collection import checkers
 from discord.ext import commands
-from discord.ext.commands import Bot
-from discord.ext.commands import Cog
-from discord.ext.commands import NoPrivateMessage
-from app.ext.music.option import EmbedSaftySearch
-from app.ext.music.option import adult_filter
-from app.ext.music.YTDLSource import YTDLSource
-from app.ext.music.player import Player
+from discord.ext.commands import (
+    Bot, Cog, NoPrivateMessage
+)
 from app.ext.music.option import (
+    EmbedSaftySearch,
+    adult_filter,
     embed_ERROR,
     embed_queued,
     embed_value,
     InvalidVoiceChannel,
     VoiceConnectionError,
 )
+from app.ext.music.YTDLSource import YTDLSource
+from app.ext.music.player import Player
 
 
 class YTDLError(Exception):
@@ -33,7 +33,7 @@ def cleanText(readData):
 
 
 class music(Cog):
-    """뮤직 모듈"""
+    """Music Extension / Powered by Safety Search"""
 
     __slots__ = ("bot", "players")
 
@@ -95,36 +95,7 @@ class music(Cog):
             self.players[ctx.guild.id] = player
         return player
 
-    @commands.group(name="music", aliases=["m"])
-    async def _music(self, ctx):
-        """
-        ```markdown
-        Music
-        --------------------------------------------------
-        |   Type   | aliases |      description
-        |:--------:|:-------:|----------------------------
-        |  connect |   join  |보이스 채널에 들어갑니다
-        |   play   |   None  |유튜브 (재생) [Search]
-        | play_list|   ml    |유튜브 (재생) playlist [Search]
-        | search   |   None  |유튜브 검색 (재생) [Search]
-        |   stop   |  None   |종료
-        |   loop   |    lp   |반복 재생
-        |   pause  |   None  |일시 중지
-        |  resume  |   None  |다시 재생
-        |   skip   |  None   |건너 뛰기
-        |  remove  |   rm    |playlist 제거
-        |  queue   |    q    |재생 목록
-        | shuffle  |   sff   |shuffle
-        | current  |    np   |재생중인 컨텐츠 정보 보기
-        |  volume  |   vol   |사운드 크기 조절
-        |   stop   |  None   |종료
-        ```
-        """
-        if ctx.invoked_subcommand is None:
-            help_cmd = self.bot.get_command("help")
-            await ctx.invoke(help_cmd, "music")
-
-    @_music.command(name="connect", aliases=["join", "j"])
+    @commands.command(name="connect", aliases=["join"])
     async def connect_(self, ctx, *, channel: discord.VoiceChannel = None):
         """보이스 채널에 들어갑니다"""
         if not channel:
@@ -155,7 +126,7 @@ class music(Cog):
             "```css\nConnected to **{}**\n```".format(str(channel)), delete_after=10
         )
 
-    @_music.command(name="loop", aliases=["lp"])
+    @commands.command(name="loop")
     async def _loop(self, ctx, mode: str):
         """반복 재생"""
 
@@ -176,9 +147,9 @@ class music(Cog):
             player.repeat = mode
         await ctx.send(f"Player repeat: **{mode}**", delete_after=5)
 
-    @_music.command(name="play", aliases=["music", "p"])
+    @commands.command(name="play", aliases=["p"])
     async def play_(self, ctx, *, search: str):
-        """재생"""
+        """Play Music & add Music"""
         await ctx.trigger_typing()
 
         vc = ctx.voice_client
@@ -199,9 +170,9 @@ class music(Cog):
         else:
             await player.queue.put(source)
 
-    @_music.command(name="play_list", aliases=["ml"])
-    async def create_playlist_play(self, ctx, *, search: str):
-        """재생"""
+    @commands.command(name="playlist", aliases=["pls"])
+    async def create_playlist_play(self, ctx: commands.Context, *, search: str):
+        """add Youtube Playlist & Play"""
         await ctx.trigger_typing()
 
         vc = ctx.voice_client
@@ -217,7 +188,7 @@ class music(Cog):
             for ix in source:
                 await player.queue.put(ix)
 
-    @_music.command(name="search")
+    @commands.command(name="search")
     async def _search(self, ctx: commands.Context, *, search: str):
         async with ctx.typing():
             try:
@@ -248,7 +219,7 @@ class music(Cog):
                         player = self.get_player(ctx)
                         await player.queue.put(source)
 
-    @_music.command(name="pause")
+    @commands.command(name="pause")
     async def pause_(self, ctx):
         """일시중지"""
         vc = ctx.voice_client
@@ -266,7 +237,7 @@ class music(Cog):
         vc.pause()
         await ctx.send(embed=embed_pause, delete_after=5)
 
-    @_music.command(name="resume")
+    @commands.command(name="resume", aliases=["replay", "re"])
     async def resume_(self, ctx):
         """다시 재생"""
         vc = ctx.voice_client
@@ -285,7 +256,7 @@ class music(Cog):
 
         await ctx.send(embed_resume, delete_after=5)
 
-    @_music.command(name="skip")
+    @commands.command(name="skip")
     async def skip_(self, ctx):
         """스킵"""
         vc = ctx.voice_client
@@ -301,7 +272,7 @@ class music(Cog):
         vc.stop()
         await ctx.send(f"```css\n{ctx.author} : 스킵!.\n```", delete_after=5)
 
-    @_music.command(name="remove", aliases=["rm"])
+    @commands.command(name="remove", aliases=["rm"])
     async def _remove(self, ctx, index: int):
         player = self.get_player(ctx)
         if len(player.queue._queue) == 0:
@@ -310,7 +281,7 @@ class music(Cog):
         player.queue.remove(index - 1)
         await ctx.send("Success delete song", delete_after=10)
 
-    @_music.command(name="shuffle", aliases=["sff"])
+    @commands.command(name="shuffle", aliases=["sff"])
     async def _shuffle(self, ctx):
         player = self.get_player(ctx)
         if len(player.queue._queue) == 0:
@@ -319,7 +290,7 @@ class music(Cog):
         player.queue.shuffle()
         await ctx.send("Success")
 
-    @_music.command(name="queue", aliases=["q", "playlist"])
+    @commands.command(name="queue", aliases=["q"])
     async def queue_info(self, ctx):
         """재생목록"""
 
@@ -342,8 +313,8 @@ class music(Cog):
 
         await ctx.send(embed=embed_queue)
 
-    @_music.command(
-        name="now_playing", aliases=["np", "current", "currentsong", "playing"]
+    @commands.command(
+        name="now_playing", aliases=["np", "current"]
     )
     async def now_playing_(self, ctx):
         """재생중인 컨텐츠 정보 보기"""
@@ -367,7 +338,7 @@ class music(Cog):
         ).add_field(name=self.verstring, value=self.buildVer)
         player.np = await ctx.send(embed=embed_now_playing)
 
-    @_music.command(name="volume", aliases=["vol"])
+    @commands.command(name="volume", aliases=["vol"])
     async def change_volume(self, ctx, *, vol: float):
         """사운드 크기 조절"""
         vc = ctx.voice_client
@@ -392,7 +363,7 @@ class music(Cog):
 
         await ctx.send(embed=embed_now_playing, delete_after=10)
 
-    @_music.command(name="stop")
+    @commands.command(name="stop")
     async def stop_(self, ctx):
         """stop"""
         vc = ctx.voice_client
